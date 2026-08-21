@@ -1,0 +1,11 @@
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+*.iml
+.idea/
+out/
+
+# Local database credentials, if/when this system gets its own persistence -
+# never committed. Mirrors GL/.gitignore's convention ahead of actually needing it.
+.env
+.env.local
