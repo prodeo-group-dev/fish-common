@@ -1,0 +1,29 @@
+name: CI
+
+# Runs on every PR and on every push to master, so a broken build is
+# caught before merge, not discovered later - the same discipline
+# GL/'s own ci.yml already established, scaled down for what this repo
+# actually is: a plain Kotlin library with no database, no HTTP layer,
+# and no Docker image to build (it's consumed as a git submodule, not
+# a deployable artifact - see README.md). One job is genuinely all
+# there is to check here.
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  test:
+    name: Unit tests (gradle test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+      - name: Run tests
+        run: ./gradlew test --console=plain
