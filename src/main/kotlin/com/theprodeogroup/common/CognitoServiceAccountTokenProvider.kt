@@ -30,6 +30,20 @@ private data class InitiateAuthResponse(val AuthenticationResult: Authentication
 private data class AuthenticationResultDto(val IdToken: String, val ExpiresIn: Long)
 
 /**
+ * Cognito's real `InitiateAuth` response carries more fields than
+ * [AuthenticationResultDto] declares (`AccessToken`, `RefreshToken`,
+ * `TokenType`, etc.) - the plain top-level `Json` singleton used to
+ * decode the response is strict (`ignoreUnknownKeys = false` by
+ * default) and threw on the first of those it hit (2026-09-12, a live
+ * production incident: every cross-service call through this provider
+ * - SOP/IM/POP/HR calling GL or each other - started failing 500 the
+ * moment Cognito's response actually included one). This lenient
+ * instance is for decoding that response only; the request is still
+ * built and encoded by hand, nothing to ignore there.
+ */
+private val lenientJson = Json { ignoreUnknownKeys = true }
+
+/**
  * Logs into Cognito as a service-account identity, caching the
  * resulting ID token and refreshing it before it expires - moved here
  * 2026-09-01 ("scope out how POP's receive-line would call IM") after
@@ -98,7 +112,7 @@ class CognitoServiceAccountTokenProvider(
             setBody(requestBody)
         }
 
-        val parsed = Json.decodeFromString(InitiateAuthResponse.serializer(), response.bodyAsText())
+        val parsed = lenientJson.decodeFromString(InitiateAuthResponse.serializer(), response.bodyAsText())
         val result = parsed.AuthenticationResult
             ?: error("Cognito InitiateAuth for $username returned no AuthenticationResult (HTTP ${response.status})")
 
